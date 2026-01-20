@@ -6,5 +6,6 @@ const taskController = require("../controllers/task.controller");
 // All task routes require authentication
 router.post("/", authMiddleware, taskController.createTask);
 router.get("/", authMiddleware, taskController.getAllTasks);
+router.get("/:id", authMiddleware, taskController.getSingleTask);
 
 module.exports = router;

@@ -83,3 +83,48 @@ exports.getAllTasks = async (req, res) => {
     });
   }
 };
+
+// @route   GET /api/v1/tasks/:id
+// @desc    Get single task
+// @access  Private (creator, assignee, or admin)
+exports.getSingleTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found"
+      });
+    }
+
+    const userId = req.user._id.toString();
+    const createdBy = task.createdBy.toString();
+    const assignee = task.assignee ? task.assignee.toString() : null;
+
+    // Authorization check
+    if (
+      req.user.role !== "admin" &&
+      userId !== createdBy &&
+      userId !== assignee
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: you are not allowed to view this task"
+      });
+    }
+
+    res.json({
+      success: true,
+      task
+    });
+  } catch (error) {
+    console.error("Get single task error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching task"
+    });
+  }
+};
