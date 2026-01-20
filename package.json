@@ -4,8 +4,8 @@
   "description": "A secure Task Management REST API built with Node.js, Express, and MongoDB featuring JWT authentication, role-based authorization, and admin management.",
   "main": "index.js",
   "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "repository": {
     "type": "git",
