@@ -1,3 +1,5 @@
+const jwt = require("jsonwebtoken");
+const { generateAccessToken, generateRefreshToken } = require("../utils/token");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const Joi = require("joi");
@@ -64,6 +66,57 @@ exports.register = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error during registration"
+    });
+  }
+};
+
+// @route   POST /api/v1/auth/login
+// @desc    Login user
+// @access  Public
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1. Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // 2. Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // 3. Generate tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // 4. Send response (no password!)
+    res.json({
+      success: true,
+      message: "Login successful",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during login"
     });
   }
 };
