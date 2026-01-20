@@ -138,3 +138,46 @@ exports.getProfile = async (req, res) => {
     });
   }
 };
+
+// @route   POST /api/v1/auth/refresh
+// @desc    Generate new access token using refresh token
+// @access  Public
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    // 1. Check if refresh token is provided
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token is required"
+      });
+    }
+
+    // 2. Verify refresh token
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    // 3. Find user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // 4. Generate new access token
+    const newAccessToken = generateAccessToken(user);
+
+    res.json({
+      success: true,
+      accessToken: newAccessToken
+    });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired refresh token"
+    });
+  }
+};
