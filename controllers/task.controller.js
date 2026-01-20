@@ -128,3 +128,118 @@ exports.getSingleTask = async (req, res) => {
     });
   }
 };
+
+// @route   PUT /api/v1/tasks/:id
+// @desc    Update task
+// @access  Private (creator/admin: all fields, assignee: status only)
+exports.updateTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const { title, description, status, priority, dueDate, assignee } = req.body;
+
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found"
+      });
+    }
+
+    const userId = req.user._id.toString();
+    const createdBy = task.createdBy.toString();
+    const currentAssignee = task.assignee ? task.assignee.toString() : null;
+
+    const isAdmin = req.user.role === "admin";
+    const isCreator = userId === createdBy;
+    const isAssignee = userId === currentAssignee;
+
+    // If not admin, creator, or assignee -> forbidden
+    if (!isAdmin && !isCreator && !isAssignee) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: you are not allowed to update this task"
+      });
+    }
+
+    // Case 1: Assignee but NOT creator/admin -> can update only status
+    if (isAssignee && !isCreator && !isAdmin) {
+      if (Object.keys(req.body).length !== 1 || status === undefined) {
+        return res.status(403).json({
+          success: false,
+          message: "Assignee can update only status field"
+        });
+      }
+
+      task.status = status;
+    } 
+    // Case 2: Creator or Admin -> can update all fields
+    else {
+      if (title !== undefined) task.title = title;
+      if (description !== undefined) task.description = description;
+      if (status !== undefined) task.status = status;
+      if (priority !== undefined) task.priority = priority;
+      if (dueDate !== undefined) task.dueDate = dueDate;
+      if (assignee !== undefined) task.assignee = assignee;
+    }
+
+    await task.save();
+
+    res.json({
+      success: true,
+      message: "Task updated successfully",
+      task
+    });
+  } catch (error) {
+    console.error("Update task error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating task"
+    });
+  }
+};
+
+// @route   DELETE /api/v1/tasks/:id
+// @desc    Delete task
+// @access  Private (creator or admin only)
+exports.deleteTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found"
+      });
+    }
+
+    const userId = req.user._id.toString();
+    const createdBy = task.createdBy.toString();
+
+    const isAdmin = req.user.role === "admin";
+    const isCreator = userId === createdBy;
+
+    // Only creator or admin can delete
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: you are not allowed to delete this task"
+      });
+    }
+
+    await task.deleteOne();
+
+    res.json({
+      success: true,
+      message: "Task deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete task error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting task"
+    });
+  }
+};
