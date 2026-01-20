@@ -4,6 +4,9 @@ const authMiddleware = require("../middleware/auth.middleware");
 const taskController = require("../controllers/task.controller");
 
 // All task routes require authentication
+
+router.get("/stats", authMiddleware, taskController.getTaskStats);
+
 router.post("/", authMiddleware, taskController.createTask);
 router.get("/", authMiddleware, taskController.getAllTasks);
 router.get("/:id", authMiddleware, taskController.getSingleTask);

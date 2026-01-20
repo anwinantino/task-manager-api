@@ -243,3 +243,68 @@ exports.deleteTask = async (req, res) => {
     });
   }
 };
+
+// @route   GET /api/v1/tasks/stats
+// @desc    Get task statistics
+// @access  Private (user: own stats, admin: all stats)
+exports.getTaskStats = async (req, res) => {
+  try {
+    let matchQuery = {};
+
+    // If not admin, limit to own tasks
+    if (req.user.role !== "admin") {
+      matchQuery.createdBy = req.user._id;
+    }
+
+    // Total tasks
+    const total = await Task.countDocuments(matchQuery);
+
+    // Completed tasks
+    const completed = await Task.countDocuments({
+      ...matchQuery,
+      status: "completed"
+    });
+
+    // Pending tasks
+    const pending = await Task.countDocuments({
+      ...matchQuery,
+      status: "pending"
+    });
+
+    // By priority
+    const low = await Task.countDocuments({
+      ...matchQuery,
+      priority: "low"
+    });
+
+    const medium = await Task.countDocuments({
+      ...matchQuery,
+      priority: "medium"
+    });
+
+    const high = await Task.countDocuments({
+      ...matchQuery,
+      priority: "high"
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        completed,
+        pending,
+        byPriority: {
+          low,
+          medium,
+          high
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Task stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching task statistics"
+    });
+  }
+};
