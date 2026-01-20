@@ -120,3 +120,21 @@ exports.login = async (req, res) => {
     });
   }
 };
+
+// @route   GET /api/v1/auth/me
+// @desc    Get current logged-in user profile
+// @access  Private
+exports.getProfile = async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      user: req.user
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching profile"
+    });
+  }
+};
